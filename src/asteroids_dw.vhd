@@ -58,8 +58,8 @@ library ieee;
 entity ASTEROIDS_DW is
   port (
     RESET            : in    std_logic;
-	 clk_25           : in    std_logic;
-	 clk_6            : in    std_logic;
+     clk_25           : in    std_logic;
+     clk_6            : in    std_logic;
 
     X_VECTOR         : in    std_logic_vector(9 downto 0);
     Y_VECTOR         : in    std_logic_vector(9 downto 0);
@@ -72,7 +72,11 @@ entity ASTEROIDS_DW is
     VIDEO_B_OUT      : out   std_logic_vector(3 downto 0);
     HSYNC_OUT        : out   std_logic;
     VSYNC_OUT        : out   std_logic;
-	 VID_DE				: out   std_logic
+    VID_DE				: out   std_logic;
+ 
+         VID_HBLANK                     : out           std_logic;
+         VID_VBLANK                     : out           std_logic
+
 	 
     );
 end;
@@ -306,9 +310,13 @@ begin
       VIDEO_G_OUT <= "0000";
       VIDEO_B_OUT <= "0000";
     end if;
-	 VID_DE <= not(v_blank or h_blank);
+    VID_DE <= not(v_blank or h_blank);
     VSYNC_OUT <= v_sync;
     HSYNC_OUT <= h_sync;
+
+    VID_HBLANK <= h_blank;
+    VID_VBLANK <= v_blank;
+
   end process;
 
   up_addr <= (Y_Vid(8 downto 0) & X_Vid(8 downto 0));

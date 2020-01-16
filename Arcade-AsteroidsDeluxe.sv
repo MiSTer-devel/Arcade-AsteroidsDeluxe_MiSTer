@@ -98,27 +98,29 @@ assign HDMI_ARY = status[1] ? 8'd9  : 8'd3;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.ASTDELUX;;",
-	"O1,Aspect Ratio,Original,Wide;",
+	"H0O1,Aspect Ratio,Original,Wide;",
 //	"O2,Orientation,Vert,Horz;",
 	"O34,Language,English,German,French,Spanish;",
 //	"O56,Ships,2-4,3-5,4-6,5-7;", system locks up when activating above 3-5
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Thrust,Shield,Start;",	
+	"J1,Fire,Thrust,Shield,Start,Coin;",	
+	"jn,A,B,X,Start,R;",
 	"V,v",`BUILD_DATE
 };
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_6, clk_25;
+wire clk_6, clk_25, clk_50;
 wire pll_locked;
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clk_6),	
+	.outclk_0(clk_50),	
 	.outclk_1(clk_25),	
+	.outclk_2(clk_6),	
 	.locked(pll_locked)
 );
 
@@ -127,6 +129,7 @@ pll pll
 
 wire [31:0] status;
 wire  [1:0] buttons;
+wire        direct_video;
 
 wire        ioctl_download;
 wire        ioctl_wr;
@@ -147,10 +150,12 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.conf_str(CONF_STR),
 
-	.buttons(buttons),
-	.status(status),
-	.forced_scandoubler(forced_scandoubler),
-	.gamma_bus(gamma_bus),
+        .buttons(buttons),
+        .status(status),
+        .status_menumask(direct_video),
+        .forced_scandoubler(forced_scandoubler),
+        .gamma_bus(gamma_bus),
+        .direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_wr(ioctl_wr),
@@ -175,9 +180,9 @@ always @(posedge clk_25) begin
 			'h006: btn_two_players  <= pressed; // F2
 			'h01C: btn_left      	<= pressed; // A
 			'h023: btn_right      	<= pressed; // D
-			'h004: btn_coin  			<= pressed; // F3
-			'h04b: btn_thrust  			<= pressed; // L
-			'h042: btn_shield  			<= pressed; // K
+			'h004: btn_coin  	<= pressed; // F3
+			'h04b: btn_thrust  	<= pressed; // L
+			'h042: btn_shield  	<= pressed; // K
 			'hX6B: btn_left        <= pressed; // left
 			'hX74: btn_right       <= pressed; // right
 			'h014: btn_fire        <= pressed; // ctrl
@@ -206,31 +211,36 @@ wire [7:0] BUTTONS = {~btn_right & ~joy[0],~btn_left & ~joy[1],~btn_one_player &
 
 ///////////////////////////////////////////////////////////////////
 
+
 wire hblank, vblank;
-wire ce_vid = 1; 
 wire hs, vs;
-wire rde, rhs, rvs;
-wire [2:0] r,g,rr,rg;
-wire [2:0] b,rb;
+wire [3:0] r,g,b;
 
-assign VGA_CLK  = clk_25; 
-assign VGA_CE   = ce_vid;
-assign VGA_R    = {r,r,r[2:1]};
-assign VGA_G    = {g,g,g[2:1]};
-assign VGA_B    = {b,b,b[2:1]};
-assign VGA_HS   = ~hs;
-assign VGA_VS   = ~vs;
 
-assign HDMI_CLK = VGA_CLK;
-assign HDMI_CE  = VGA_CE;
-assign HDMI_R   = VGA_R ;
-assign HDMI_G   = VGA_G ;
-assign HDMI_B   = VGA_B ;
-assign HDMI_DE  = VGA_DE;
-assign HDMI_HS  = VGA_HS;
-assign HDMI_VS  = VGA_VS;
-//assign HDMI_SL  = status[2] ? 2'd0   : status[4:3];
-assign HDMI_SL  = 2'd0;
+reg ce_pix;
+always @(posedge clk_50) begin
+       ce_pix <= !ce_pix;
+end
+
+arcade_video #(640,480,12) arcade_video
+(
+        .*,
+
+        .clk_video(clk_50),
+
+        .RGB_in({r,g,b}),
+        .HBlank(hblank),
+        .VBlank(vblank),
+        .HSync(~hs),
+        .VSync(~vs),
+
+	.forced_scandoubler(0),
+        .no_rotate(1),
+        .rotate_ccw(0),
+        .fx(0)
+);
+
+
 
 wire reset = (RESET | status[0] | buttons[1] | ioctl_download);
 wire [7:0] audio;
@@ -254,7 +264,10 @@ ASTEROIDS_TOP ASTEROIDS_TOP
 	.VIDEO_B_OUT(b),
 	.HSYNC_OUT(hs),
 	.VSYNC_OUT(vs),
-	.VGA_DE(VGA_DE),
+	.VGA_DE(vgade),
+        .VID_HBLANK(hblank),
+        .VID_VBLANK(vblank),
+
 	.RESET_L (~reset),	
 	.clk_6(clk_6),
 	.clk_25(clk_25)
