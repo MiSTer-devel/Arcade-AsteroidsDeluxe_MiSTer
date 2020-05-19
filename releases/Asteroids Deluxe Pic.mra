@@ -1,22 +1,21 @@
 <misterromdescription>
 	<name>Asteroids Deluxe (rev 3)</name>
-	<mameversion>0220</mameversion>
-	<setname>astdelux</setname>
-	<mratimestamp>20200427161917</mratimestamp>
+	<mameversion>0216</mameversion>
+	<mratimestamp>201911270000</mratimestamp>
 	<year>1980</year>
 	<manufacturer>Atari</manufacturer>
 	<category>Space / Asteroids</category>
 	<category>Space / Fighter</category>
 	<rbf>asteroidsdeluxe</rbf>
-	<rom index="0" zip="astdelux.zip" md5="6d4680945c22cb97863ac210fb5abf04">
-		<part crc="a4d7a525" name="036430-02.d1"/>
-		<part crc="d4004aae" name="036431-02.ef1"/>
-		<part crc="6d720c41" name="036432-02.fh1"/>
-		<part crc="0dcc0be6" name="036433-03.j1"/>
-		<part crc="bb8cabe1" name="036800-02.r2"/>
-		<part crc="7d511572" name="036799-01.np2"/>
+	<rom index="0" zip="astdelux.zip" md5="6d4680945c22cb97863ac210fb5abf04" type="merged|nonmerged">
+                <part crc="a4d7a525" name="036430-02.d1"/>
+                <part crc="d4004aae" name="036431-02.ef1"/>
+                <part crc="6d720c41" name="036432-02.fh1"/>
+                <part crc="0dcc0be6" name="036433-03.j1"/>
+                <part crc="bb8cabe1" name="036800-02.r2"/>
+                <part crc="7d511572" name="036799-01.np2"/>
 	</rom>
-        <rom index="2">
+	<rom index="2">
 <part>
 06 00 00 00 06 00 00 00 0C 00 05 00 00 00 00 00 
 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 

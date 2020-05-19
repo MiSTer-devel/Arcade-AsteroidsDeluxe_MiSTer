@@ -129,10 +129,24 @@ architecture RTL of ASTEROIDS_DW is
   signal vram_wren				: std_logic;
 
 
-
-  
+--  signal count : integer :=1;
+--  signal new_clk:std_logic:='0';
 
 begin
+--   divider : process (clk_25,RESET) 
+--	begin
+--	  if (RESET='1') then
+--	    count<=1;
+--		 new_clk<='0';
+--		elsif (clk_25'event and clk_25='1') then
+--		 count<=count+1;
+--		if (count=2) then
+--		  new_clk<= NOT new_clk;
+--		  count<=1;
+--		end if;
+--		end if;
+--	  end process;
+		  
 
 	pixel_cnt : process(clk_25, RESET)
 	 variable vcnt_front_porch_start : boolean;
@@ -283,6 +297,7 @@ begin
   p_video_out : process
   begin
     wait until rising_edge(clk_25);
+   -- wait until rising_edge(new_clk);
     if raster_active = '1' then
 		case vid_out is
       when "0000" => video_r <= "0000";video_g <= "0000";video_b <= "0000";
@@ -321,6 +336,7 @@ begin
 
   up_addr <= (Y_Vid(8 downto 0) & X_Vid(8 downto 0));
   
+  --clear_ram : process(clk_6, RESET)
   clear_ram : process(clk_25, RESET)
 	variable state 				: integer range 0 to 4;
 	variable beam_ena_r 	: std_logic := '0';
@@ -329,6 +345,7 @@ begin
 		if RESET = '1' then
 			beam_ena_r := '0';
 
+		--elsif rising_edge(clk_6) then
 		elsif rising_edge(clk_25) then
 		vram_wren <= '0' after 2 ns;
 		
@@ -427,10 +444,11 @@ begin
   end process;
   
   
-    video_rgb : work.dpram generic map (19,4)	
+video_rgb : work.dpram generic map (19,4)	
 port map
 (
 	clock_a   => clk_25,
+	--clock_a   => clk_6,
 	wren_a    => vram_wren,
 	address_a => dw_addr(18 downto 0),
 	data_a    => vid_data,

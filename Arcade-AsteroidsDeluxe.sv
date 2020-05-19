@@ -76,6 +76,19 @@ module emu
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
 	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
+
+	//SDRAM interface with lower latency
+	output        SDRAM_CLK,
+	output        SDRAM_CKE,
+	output [12:0] SDRAM_A,
+	output  [1:0] SDRAM_BA,
+	inout  [15:0] SDRAM_DQ,
+	output        SDRAM_DQML,
+	output        SDRAM_DQMH,
+	output        SDRAM_nCS,
+	output        SDRAM_nCAS,
+	output        SDRAM_nRAS,
+	output        SDRAM_nWE,  
 	
 	// Open-drain User port.
 	// 0 - D+/RX
@@ -103,6 +116,8 @@ localparam CONF_STR = {
 	"O34,Language,English,German,French,Spanish;",
 //	"O56,Ships,2-4,3-5,4-6,5-7;", system locks up when activating above 3-5
 	"-;",
+	"OA,Background Graphic,On,Off;",
+	"-;",
 	"R0,Reset;",
 	"J1,Fire,Thrust,Shield,Start,Coin;",	
 	"jn,A,B,X,Start,R;",
@@ -111,7 +126,8 @@ localparam CONF_STR = {
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_6, clk_25, clk_50;
+wire clk_6, clk_25, clk_50, clk_100;
+wire clk_mem = clk_100;
 wire pll_locked;
 
 pll pll
@@ -121,6 +137,7 @@ pll pll
 	.outclk_0(clk_50),	
 	.outclk_1(clk_25),	
 	.outclk_2(clk_6),	
+	.outclk_3(clk_100),	
 	.locked(pll_locked)
 );
 
@@ -135,6 +152,7 @@ wire        ioctl_download;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
+wire  [7:0] ioctl_index;
 
 wire [10:0] ps2_key;
 
@@ -142,6 +160,7 @@ wire [15:0] joy_0, joy_1;
 wire [15:0] joy = joy_0 | joy_1;
 wire        forced_scandoubler;
 wire [21:0] gamma_bus;
+wire [15:0] sdram_sz;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -150,17 +169,20 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.conf_str(CONF_STR),
 
-        .buttons(buttons),
-        .status(status),
-        .status_menumask(direct_video),
-        .forced_scandoubler(forced_scandoubler),
-        .gamma_bus(gamma_bus),
-        .direct_video(direct_video),
+   .buttons(buttons),
+   .status(status),
+   .status_menumask(direct_video),
+   .forced_scandoubler(forced_scandoubler),
+   .gamma_bus(gamma_bus),
+   .direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
+   .ioctl_index(ioctl_index),
+	
+   .sdram_sz(sdram_sz),
 
 	.joystick_0(joy_0),
 	.joystick_1(joy_1),
@@ -216,25 +238,39 @@ wire hblank, vblank;
 wire hs, vs;
 wire [3:0] r,g,b;
 
+wire [7:0] rr = {r,r};
+wire [7:0] gg = {g,g};
+wire [7:0] bb = {b,b};
 
 reg ce_pix;
 always @(posedge clk_50) begin
        ce_pix <= !ce_pix;
 end
+/*
+always @(posedge clk_50) begin
+	reg [1:0] div = 0;
+	
+	div <= div + 1'd1;
 
-arcade_video #(640,480,12) arcade_video
+	ce_pix <= div[0] & ~div[1];
+end
+*/
+
+wire fg = |{rr,gg,bb};
+
+arcade_video #(640,480,24) arcade_video
 (
         .*,
 
         .clk_video(clk_50),
-
-        .RGB_in({r,g,b}),
+        .RGB_in(status[10] ? {rr,gg,bb}  : (fg && !bg_a) ? {rr,gg,bb} : {bg_r,bg_g,bg_b}),
+        //.RGB_in({rr,gg,bb}),
         .HBlank(hblank),
         .VBlank(vblank),
-        .HSync(~hs),
-        .VSync(~vs),
+        .HSync(hs),
+        .VSync(vs),
 
-	.forced_scandoubler(0),
+        .forced_scandoubler(0),
         .no_rotate(1),
         .rotate_ccw(0),
         .fx(0)
@@ -258,19 +294,73 @@ ASTEROIDS_TOP ASTEROIDS_TOP
 	.AUDIO_OUT(audio),
 	.dn_addr(ioctl_addr[15:0]),
 	.dn_data(ioctl_dout),
-	.dn_wr(ioctl_wr),	
+	.dn_wr(ioctl_wr&(ioctl_index==0)),	
 	.VIDEO_R_OUT(r),
 	.VIDEO_G_OUT(g),
 	.VIDEO_B_OUT(b),
 	.HSYNC_OUT(hs),
 	.VSYNC_OUT(vs),
 	.VGA_DE(vgade),
-        .VID_HBLANK(hblank),
-        .VID_VBLANK(vblank),
+   .VID_HBLANK(hblank),
+   .VID_VBLANK(vblank),
 
 	.RESET_L (~reset),	
 	.clk_6(clk_6),
 	.clk_25(clk_25)
 );
+
+
+wire bg_download = ioctl_download && (ioctl_index == 2);
+
+reg [7:0] ioctl_dout_r;
+always @(posedge clk_25) if(ioctl_wr & ~ioctl_addr[0]) ioctl_dout_r <= ioctl_dout;
+
+wire [31:0] pic_data;
+sdram sdram
+(
+        .*,
+
+        .init(~pll_locked),
+        .clk(clk_mem),
+        .ch1_addr(bg_download ? ioctl_addr[24:1] : pic_addr),
+        .ch1_dout(pic_data),
+        .ch1_din({ioctl_dout, ioctl_dout_r}),
+        .ch1_req(bg_download ? (ioctl_wr & ioctl_addr[0]) : pic_req),
+        .ch1_rnw(~bg_download)
+);
+
+reg        pic_req;
+reg [24:1] pic_addr;
+reg  [7:0] bg_r,bg_g,bg_b,bg_a;
+
+always @(posedge clk_25) begin
+        reg old_vs;
+        reg use_bg = 0;
+
+        if(bg_download && sdram_sz[2:0]) use_bg <= 1;
+
+        pic_req <= 0;
+
+        if(use_bg) begin
+                if(ce_pix) begin
+                        old_vs <= vs;
+                        {bg_a,bg_b,bg_g,bg_r} <= pic_data;
+                        //{bg_a,bg_b,bg_g,bg_r} <= { 8'b11111111, 8'b11111111, 8'b11111111, 8'b11111111};
+                        if(~(hblank|vblank)) begin
+                                pic_addr <= pic_addr + 2'd2;
+                                pic_req <= 1;
+                        end
+
+                        if(~old_vs & vs) begin
+                                pic_addr <= 0;
+                                pic_req <= 1;
+                        end
+                end
+        end
+        else begin
+                {bg_a,bg_b,bg_g,bg_r} <= 0;
+        end
+end
+
 
 endmodule
