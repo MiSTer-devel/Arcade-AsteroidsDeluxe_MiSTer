@@ -129,24 +129,7 @@ architecture RTL of ASTEROIDS_DW is
   signal vram_wren				: std_logic;
 
 
---  signal count : integer :=1;
---  signal new_clk:std_logic:='0';
-
 begin
---   divider : process (clk_25,RESET) 
---	begin
---	  if (RESET='1') then
---	    count<=1;
---		 new_clk<='0';
---		elsif (clk_25'event and clk_25='1') then
---		 count<=count+1;
---		if (count=2) then
---		  new_clk<= NOT new_clk;
---		  count<=1;
---		end if;
---		end if;
---	  end process;
-		  
 
 	pixel_cnt : process(clk_25, RESET)
 	 variable vcnt_front_porch_start : boolean;
