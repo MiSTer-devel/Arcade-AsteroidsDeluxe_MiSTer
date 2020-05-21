@@ -112,7 +112,6 @@ assign HDMI_ARY = status[1] ? 8'd9  : 8'd3;
 localparam CONF_STR = {
 	"A.ASTDELUX;;",
 	"H0O1,Aspect Ratio,Original,Wide;",
-//	"O2,Orientation,Vert,Horz;",
 	"O34,Language,English,German,French,Spanish;",
 //	"O56,Ships,2-4,3-5,4-6,5-7;", system locks up when activating above 3-5
 	"-;",
@@ -238,23 +237,10 @@ wire hblank, vblank;
 wire hs, vs;
 wire [3:0] r,g,b;
 
-//wire [7:0] rr = {r,r};
-//wire [7:0] gg = {g,g};
-//wire [7:0] bb = {b,b};
-
 reg ce_pix;
 always @(posedge clk_50) begin
        ce_pix <= !ce_pix;
 end
-/*
-always @(posedge clk_50) begin
-	reg [1:0] div = 0;
-	
-	div <= div + 1'd1;
-
-	ce_pix <= div[0] & ~div[1];
-end
-*/
 
 wire fg = |{r,g,b};
 
@@ -264,8 +250,6 @@ arcade_video #(640,480,12) arcade_video
 
         .clk_video(clk_50),
         .RGB_in(status[10] ? {r,g,b}  : (fg && !bg_a) ? {r,g,b} : {bg_r,bg_g,bg_b}),
-        //.RGB_in({bg_r,bg_g,bg_b}),
-        //.RGB_in({rr,gg,bb}),
         .HBlank(hblank),
         .VBlank(vblank),
         .HSync(hs),
@@ -348,8 +332,6 @@ always @(posedge clk_50) begin
                 if(ce_pix) begin
                         old_vs <= vs;
                         {bg_b,bg_a,bg_r,bg_g} <= pic_data;
-                        //{bg_a,bg_b,bg_g,bg_r} <= { 4'b1111, 4'b1111, 4'b1111, 4'b1111};
-                        //{bg_a,bg_b,bg_g,bg_r} <= { 8'b11111111, 8'b11111111, 8'b11111111, 8'b11111111};
                         if(~(hblank|vblank)) begin
                                 pic_addr <= pic_addr + 2'd2;
                                 pic_req <= 1;
