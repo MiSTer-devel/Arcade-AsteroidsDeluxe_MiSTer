@@ -164,10 +164,10 @@ wire [15:0] sdram_sz;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
-	.clk_sys(clk_25),
-	.HPS_BUS(HPS_BUS),
+   .clk_sys(clk_25),
+   .HPS_BUS(HPS_BUS),
 
-	.conf_str(CONF_STR),
+   .conf_str(CONF_STR),
 
    .buttons(buttons),
    .status(status),
@@ -176,17 +176,17 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
    .gamma_bus(gamma_bus),
    .direct_video(direct_video),
 
-	.ioctl_download(ioctl_download),
-	.ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_dout),
+   .ioctl_download(ioctl_download),
+   .ioctl_wr(ioctl_wr),
+   .ioctl_addr(ioctl_addr),
+   .ioctl_dout(ioctl_dout),
    .ioctl_index(ioctl_index),
 	
    .sdram_sz(sdram_sz),
 
-	.joystick_0(joy_0),
-	.joystick_1(joy_1),
-	.ps2_key(ps2_key)
+   .joystick_0(joy_0),
+   .joystick_1(joy_1),
+   .ps2_key(ps2_key)
 );
 
 wire       pressed = ps2_key[9];
@@ -238,9 +238,9 @@ wire hblank, vblank;
 wire hs, vs;
 wire [3:0] r,g,b;
 
-wire [7:0] rr = {r,r};
-wire [7:0] gg = {g,g};
-wire [7:0] bb = {b,b};
+//wire [7:0] rr = {r,r};
+//wire [7:0] gg = {g,g};
+//wire [7:0] bb = {b,b};
 
 reg ce_pix;
 always @(posedge clk_50) begin
@@ -256,14 +256,15 @@ always @(posedge clk_50) begin
 end
 */
 
-wire fg = |{rr,gg,bb};
+wire fg = |{r,g,b};
 
-arcade_video #(640,480,24) arcade_video
+arcade_video #(640,480,12) arcade_video
 (
         .*,
 
         .clk_video(clk_50),
-        .RGB_in(status[10] ? {rr,gg,bb}  : (fg && !bg_a) ? {rr,gg,bb} : {bg_r,bg_g,bg_b}),
+        .RGB_in(status[10] ? {r,g,b}  : (fg && !bg_a) ? {r,g,b} : {bg_r,bg_g,bg_b}),
+        //.RGB_in({bg_r,bg_g,bg_b}),
         //.RGB_in({rr,gg,bb}),
         .HBlank(hblank),
         .VBlank(vblank),
@@ -288,25 +289,25 @@ wire [1:0] ships = status[6:5];
 
 ASTEROIDS_TOP ASTEROIDS_TOP
 (
-	.BUTTON(BUTTONS),
-	.LANG(lang),
-	.SHIPS(ships),
-	.AUDIO_OUT(audio),
-	.dn_addr(ioctl_addr[15:0]),
-	.dn_data(ioctl_dout),
-	.dn_wr(ioctl_wr&(ioctl_index==0)),	
-	.VIDEO_R_OUT(r),
-	.VIDEO_G_OUT(g),
-	.VIDEO_B_OUT(b),
-	.HSYNC_OUT(hs),
-	.VSYNC_OUT(vs),
-	.VGA_DE(vgade),
+   .BUTTON(BUTTONS),
+   .LANG(lang),
+   .SHIPS(ships),
+   .AUDIO_OUT(audio),
+   .dn_addr(ioctl_addr[15:0]),
+   .dn_data(ioctl_dout),
+   .dn_wr(ioctl_wr&(ioctl_index==0)),	
+   .VIDEO_R_OUT(r),
+   .VIDEO_G_OUT(g),
+   .VIDEO_B_OUT(b),
+   .HSYNC_OUT(hs),
+   .VSYNC_OUT(vs),
+   .VGA_DE(vgade),
    .VID_HBLANK(hblank),
    .VID_VBLANK(vblank),
 
-	.RESET_L (~reset),	
-	.clk_6(clk_6),
-	.clk_25(clk_25)
+   .RESET_L (~reset),	
+   .clk_6(clk_6),
+   .clk_25(clk_25)
 );
 
 
@@ -315,25 +316,27 @@ wire bg_download = ioctl_download && (ioctl_index == 2);
 reg [7:0] ioctl_dout_r;
 always @(posedge clk_25) if(ioctl_wr & ~ioctl_addr[0]) ioctl_dout_r <= ioctl_dout;
 
-wire [31:0] pic_data;
+wire [15:0] pic_data;
+wire ram_ready;
 sdram sdram
 (
         .*,
 
         .init(~pll_locked),
         .clk(clk_mem),
-        .ch1_addr(bg_download ? ioctl_addr[24:1] : pic_addr),
-        .ch1_dout(pic_data),
-        .ch1_din({ioctl_dout, ioctl_dout_r}),
-        .ch1_req(bg_download ? (ioctl_wr & ioctl_addr[0]) : pic_req),
-        .ch1_rnw(~bg_download)
+        .addr(bg_download ? ioctl_addr[24:0] : pic_addr),
+        .dout(pic_data),
+        .din(ioctl_dout),
+        .we(bg_download ? ioctl_wr : 1'b0),
+        .rd(pic_req),
+	.ready(ram_ready)
 );
 
 reg        pic_req;
-reg [24:1] pic_addr;
-reg  [7:0] bg_r,bg_g,bg_b,bg_a;
+reg [24:0] pic_addr;
+reg  [3:0] bg_r,bg_g,bg_b,bg_a;
 
-always @(posedge clk_25) begin
+always @(posedge clk_50) begin
         reg old_vs;
         reg use_bg = 0;
 
@@ -344,7 +347,8 @@ always @(posedge clk_25) begin
         if(use_bg) begin
                 if(ce_pix) begin
                         old_vs <= vs;
-                        {bg_a,bg_b,bg_g,bg_r} <= pic_data;
+                        {bg_b,bg_a,bg_r,bg_g} <= pic_data;
+                        //{bg_a,bg_b,bg_g,bg_r} <= { 4'b1111, 4'b1111, 4'b1111, 4'b1111};
                         //{bg_a,bg_b,bg_g,bg_r} <= { 8'b11111111, 8'b11111111, 8'b11111111, 8'b11111111};
                         if(~(hblank|vblank)) begin
                                 pic_addr <= pic_addr + 2'd2;
