@@ -50,6 +50,7 @@ entity ASTEROIDS_TOP is
     BUTTON            : in std_logic_vector(7 downto 0); -- active low
     LANG					 : in std_logic_vector(1 downto 0);
     SHIPS				 : in std_logic_vector(1 downto 0);
+    BONUS				 : in std_logic_vector(1 downto 0);
     AUDIO_OUT         : out   std_logic_vector(7 downto 0);
 
     dn_addr         	: in std_logic_vector(15 downto 0);
@@ -140,6 +141,7 @@ begin
       BUTTON            => BUTTON,
       LANG					=> LANG,
 		SHIPS					=> SHIPS,
+		BONUS					=> BONUS,
       AUDIO_OUT         => AUDIO_OUT,
 
       X_VECTOR          => x_vector,

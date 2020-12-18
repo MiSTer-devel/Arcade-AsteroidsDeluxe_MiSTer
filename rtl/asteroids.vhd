@@ -51,6 +51,7 @@ entity ASTEROIDS is
     BUTTON            : in    std_logic_vector(7 downto 0); -- active low
     LANG					 : in 	std_logic_vector(1 downto 0);
 	 SHIPS				 : in 	std_logic_vector(1 downto 0);
+	 BONUS				 : in 	std_logic_vector(1 downto 0);
     AUDIO_OUT         : out   std_logic_vector(7 downto 0);
     --
     X_VECTOR          : out   std_logic_vector(9 downto 0);
@@ -72,7 +73,7 @@ architecture RTL of ASTEROIDS is
   constant SELF_TEST_SWITCH_L : std_logic := '1';
 
   signal ena_count            : std_logic_vector(10 downto 0) := (others => '0');
-  signal ena_3M               : std_ulogic;
+  --signal ena_3M               : std_ulogic;
   signal ena_1_5M             : std_ulogic;
   signal ena_1_5M_e           : std_ulogic;
   signal ena_12K              : std_ulogic;
@@ -104,9 +105,9 @@ architecture RTL of ASTEROIDS is
   signal wdclr_l              : std_logic;
   signal explode_l            : std_logic;
   signal dma_reset_l          : std_logic;
-  signal eacontrol_l          : std_logic;
+  --signal eacontrol_l          : std_logic;
   signal audio_l              : std_logic;
-  signal noiserst_l           : std_logic;
+  --signal noiserst_l           : std_logic;
   --
   signal start1_led_l         : std_logic;
   signal start2_led_l         : std_logic;
@@ -169,7 +170,7 @@ begin
   begin
     wait until rising_edge(CLK_6);
     ena_count <= ena_count + "1";
-    ena_3M   <= not ena_count(0); -- 3 Mhz;
+    --ena_3M   <= not ena_count(0); -- 3 Mhz;
 
     ena_1_5M <= '0';
     ena_1_5M_e <= '0';
@@ -328,9 +329,9 @@ begin
     wdclr_l      <= decc(2);
     explode_l    <= decc(3);
     dma_reset_l  <= decc(4);
-    eacontrol_l  <= decc(5);
+    --eacontrol_l  <= decc(5);
     audio_l      <= decc(6);
-    noiserst_l   <= decc(7);
+    --noiserst_l   <= decc(7);
 
   end process;
 
@@ -366,7 +367,7 @@ begin
     -- off is 1, on is 0
     --            12345678
 --    dips_r5_l <= "00100000"; -- default
-	 dips_r5_l <= LANG & "100000"; 
+	 dips_r5_l <= LANG & SHIPS & "00"&BONUS; 
 --    dips_r8_l <= "11000110"; -- default
 	 dips_r8_l <= "11111111"; 
 

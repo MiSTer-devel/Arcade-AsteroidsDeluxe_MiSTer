@@ -133,13 +133,14 @@ localparam CONF_STR = {
 	"H0OEF,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	//"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"O78,Language,English,German,French,Spanish;",
-//	"O56,Ships,2-4,3-5,4-6,5-7;", system locks up when activating above 3-5
+	"O56,Ships,2-4,3-5,4-6,5-7;",// system locks up when activating above 3-5
+	"OBC,Bonus,10000,12000,15000,None;",
 	"-;",
 	"OA,Background Graphic,On,Off;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Thrust,Shield,Start,Coin;",	
-	"jn,A,B,X,Start,R;",
+	"J1,Fire,Thrust,Shield,Start 1P,Start 2P,Coin;",	
+	"jn,A,B,X,Start,Select,R;",
 	"V,v",`BUILD_DATE
 };
 
@@ -207,8 +208,9 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
    .joystick_1(joy_1)
 );
 
-
-wire [7:0] BUTTONS = {~joy[0],~joy[1],~joy[7],~joy[4],~joy[7],~joy[5],~joy[6]};
+//	"J1,Fire,Thrust,Shield,Start 1P,Start 2P,Coin;",	
+//    [0,1,2,3] Fire 4, Thrust 5, Shield 6, One Player 7, Two Player 8, Coin 9
+wire [7:0] BUTTONS = {~joy[0],~joy[1],~joy[7],~joy[8],~joy[4],~joy[9],~joy[5],~joy[6]};
 
 ///////////////////////////////////////////////////////////////////
 
@@ -254,6 +256,7 @@ ASTEROIDS_TOP ASTEROIDS_TOP
    .BUTTON(BUTTONS),
    .LANG(lang),
    .SHIPS(ships),
+	.BONUS(status[12:11]),
    .AUDIO_OUT(audio),
    .dn_addr(ioctl_addr[15:0]),
    .dn_data(ioctl_dout),
@@ -263,7 +266,7 @@ ASTEROIDS_TOP ASTEROIDS_TOP
    .VIDEO_B_OUT(b),
    .HSYNC_OUT(hs),
    .VSYNC_OUT(vs),
-   .VGA_DE(vgade),
+   .VGA_DE(),
    .VID_HBLANK(hblank),
    .VID_VBLANK(vblank),
 
@@ -275,22 +278,20 @@ ASTEROIDS_TOP ASTEROIDS_TOP
 
 wire bg_download = ioctl_download && (ioctl_index == 2);
 
-reg [7:0] ioctl_dout_r;
-always @(posedge clk_25) if(ioctl_wr & ~ioctl_addr[0]) ioctl_dout_r <= ioctl_dout;
 
 wire [15:0] pic_data;
 wire ram_ready;
 sdram sdram
 (
-        .*,
+	.*,
 
-        .init(~pll_locked),
-        .clk(clk_mem),
-        .addr(bg_download ? ioctl_addr[24:0] : pic_addr),
-        .dout(pic_data),
-        .din(ioctl_dout),
-        .we(bg_download ? ioctl_wr : 1'b0),
-        .rd(pic_req),
+	.init(~pll_locked),
+	.clk(clk_mem),
+	.addr(bg_download ? ioctl_addr[24:0] : pic_addr),
+	.dout(pic_data),
+	.din(ioctl_dout),
+	.we(bg_download ? ioctl_wr : 1'b0),
+	.rd(pic_req),
 	.ready(ram_ready)
 );
 
