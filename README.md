@@ -1,8 +1,8 @@
 # [Arcade: Asteroids Deluxe](https://www.arcade-museum.com/game_detail.php?game_id=6940) for [MiSTer](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
 
-## Description
-
 The original source code was downloaded from: http://fpgaarcade.com/games.htm
+
+## Description
 
 This is a simulation model of the Asteroids Deluxe hardware which is a vector graphics based arcade system that utilized a 6502 processor along with a proprietary display.
 
