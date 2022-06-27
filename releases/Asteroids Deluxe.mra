@@ -7,6 +7,7 @@
 	<category>Space / Asteroids</category>
 	<category>Space / Fighter</category>
 	<rbf>asteroidsdeluxe</rbf>
+	<setname>astdelux</setname>
 	<rom index="0" zip="astdelux.zip" md5="6d4680945c22cb97863ac210fb5abf04" type="merged|nonmerged">
                 <part crc="a4d7a525" name="036430-02.d1"/>
                 <part crc="d4004aae" name="036431-02.ef1"/>
