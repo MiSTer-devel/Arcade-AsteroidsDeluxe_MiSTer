@@ -1,3 +1,6 @@
+This has been superseded by a new version of Asteroids.
+
+
 # [Arcade: Asteroids Deluxe](https://www.arcade-museum.com/game_detail.php?game_id=6940) for [MiSTer](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
 
 The original source code was downloaded from: http://fpgaarcade.com/games.htm
