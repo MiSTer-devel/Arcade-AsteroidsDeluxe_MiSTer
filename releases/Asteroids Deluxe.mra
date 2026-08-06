@@ -4,6 +4,7 @@
 	<mratimestamp>201911270000</mratimestamp>
 	<year>1980</year>
 	<manufacturer>Atari</manufacturer>
+	<rotation>horizontal</rotation>
 	<category>Space / Asteroids</category>
 	<category>Space / Fighter</category>
 	<rbf>asteroidsdeluxe</rbf>
